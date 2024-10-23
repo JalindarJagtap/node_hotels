@@ -2,12 +2,12 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 // define the mongodb connection  Url
-// const mongooseURL = process.env.MOGODB_URL_LOCAL;/// replace  the url local
+ const mongoURL = process.env.MOGODB_URL_LOCAL;/// replace  the url local
 
-const mongooseURL = process.env.MONGODB_URL; // this is atlas  server URL
-//setup the mongodb connection 
+//const mongoURL = process.env.MONGODB_URL; // this is atlas  server URL
+  
 
-mongoose.connect(mongooseURL, {});
+mongoose.connect(mongoURL, {});
 
 const db = mongoose.connection;
 

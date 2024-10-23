@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Person = require('./../model/Person');
+const { jwtAuthMeddleware, generateToken } = require('./../jwt');
 
-router.post('/', async (req, res) => {
+router.post('/signup', async (req, res) => {
     try {
         const data = req.body
 
@@ -10,7 +11,18 @@ router.post('/', async (req, res) => {
 
         const response = await newPerson.save();
         console.log('data saved');
-        res.status(200).json(response);
+
+        const payload = {
+            id: response.id,
+            username: response.username,
+            email: response.email,
+
+        }
+        const token = generateToken(payload);
+        console.log(token)
+        console.log('token saved:', token);
+
+        res.status(200).json({ response: response, token: token });
 
 
     } catch (error) {
@@ -20,8 +32,47 @@ router.post('/', async (req, res) => {
     }
 
 });
+// login Route
+
+router.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await Person.findOne({ username: username });
+        if (!user || !(await user.comparePassword(password))) {
+            return res.status(401).json({ message: 'invalid password or username' });
+        }
+        const payload = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+        }
+        const token = generateToken(payload);
+        res.json(token)
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error" });
+
+    }
+
+});
+router.get('/profile', jwtAuthMeddleware, async (req, res) => {
+
+    try {
+        const userData = req.user;
+        console.log("User Data",userData);
+        const userId = userData.id;
+        const user = await Person.findById(userId)
+        res.status(200).json({ user });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "internal serever  error" });
+
+    }
+
+});
+
 // Get method  to get the person 
-router.get('/', async (req, res) => {
+router.get('/', jwtAuthMeddleware, async (req, res) => {
 
     try {
         const data = await Person.find();
@@ -33,6 +84,7 @@ router.get('/', async (req, res) => {
 
     }
 });
+
 // person add the params
 router.get('/:workType', async (req, res) => {
     try {
@@ -79,7 +131,7 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
     try {
-        const personId = req.params.id; 
+        const personId = req.params.id;
         const response = await Person.findByIdAndDelete(personId);
         if (!response) {
             return res.status(404).json({ error: "person not found" });
